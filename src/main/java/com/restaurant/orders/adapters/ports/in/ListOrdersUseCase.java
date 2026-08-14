@@ -1,0 +1,25 @@
+package com.restaurant.orders.adapters.ports.in;
+
+import com.restaurant.orders.domain.model.Order;
+import reactor.core.publisher.Flux;
+
+/**
+ * Use Case: List all orders with optional filters.
+ */
+public interface ListOrdersUseCase {
+    Flux<Order> execute(ListOrdersFilter filter);
+}
+
+/**
+ * Filter object for listing orders.
+ */
+public record ListOrdersFilter(
+        Integer tableNumber,
+        String status,
+        java.time.LocalDateTime dateFrom,
+        java.time.LocalDateTime dateTo
+) {
+    public boolean hasFilters() {
+        return tableNumber != null || status != null || dateFrom != null || dateTo != null;
+    }
+}
