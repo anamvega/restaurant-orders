@@ -28,15 +28,15 @@ public class ListOrdersUseCaseImpl implements ListOrdersUseCase {
         log.info("Executing ListOrdersUseCase with filter: {}", filter);
 
         Optional<Integer> tableNum = Optional.ofNullable(filter.tableNumber());
-        Optional<OrderStatus> statusOpt = Optional.empty();
-
-        if (filter.status() != null && !filter.status().isBlank()) {
-            try {
-                statusOpt = Optional.of(OrderStatus.valueOf(filter.status().toUpperCase()));
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid status: " + filter.status());
-            }
-        }
+        Optional<OrderStatus> statusOpt = filter.status()
+                .map(statusStr -> {
+                    try {
+                        return Optional.of(OrderStatus.valueOf(statusStr.toUpperCase()));
+                    } catch (IllegalArgumentException e) {
+                        throw new IllegalArgumentException("Invalid status: " + statusStr);
+                    }
+                })
+                .orElse(Optional.empty());
 
         return orderRepository.findAll(
                 tableNum,

@@ -40,7 +40,7 @@ public class OrderEndpoints {
 
         return body
                 .doOnNext(req -> log.info("Received create order request for table {}", req.getTableNumber()))
-                .flatMap(orderService::toCreateCommand)
+                .map(orderService::toCreateCommand)
                 .flatMap(orderService::createOrder)
                 .map(orderService::toResponse)
                 .flatMap(response -> ServerResponse.ok().bodyValue(response));

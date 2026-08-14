@@ -9,13 +9,3 @@ import reactor.core.publisher.Mono;
 public interface AddOrderItemUseCase {
     Mono<Order> execute(String orderId, AddOrderItemCommand command);
 }
-
-/**
- * Command object for adding an item to an order.
- */
-record AddOrderItemCommand(
-        String dishName,
-        Integer quantity,
-        java.math.BigDecimal unitPrice
-) {
-}

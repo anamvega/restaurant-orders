@@ -1,11 +1,12 @@
 package com.restaurant.orders.domain.service;
 
 import com.restaurant.orders.adapters.ports.in.AddOrderItemCommand;
-import com.restaurant.orders.adapters.ports.in.CreateOrderCommand;
-import com.restaurant.orders.adapters.ports.in.CreateOrderItemCommand;
 import com.restaurant.orders.adapters.ports.in.ListOrdersFilter;
+import com.restaurant.orders.adapters.ports.in.dto.CreateOrderCommand;
+import com.restaurant.orders.adapters.ports.in.dto.CreateOrderItemCommand;
 import com.restaurant.orders.adapters.ports.in.dto.CreateOrderRequest;
 import com.restaurant.orders.adapters.ports.in.dto.OrderItemRequest;
+import com.restaurant.orders.adapters.ports.in.dto.OrderResponse;
 import com.restaurant.orders.adapters.ports.out.OrderRepositoryPort;
 import com.restaurant.orders.domain.model.Order;
 import com.restaurant.orders.domain.model.OrderItem;
@@ -105,7 +106,7 @@ class OrderApplicationServiceTest {
         when(orderRepository.findAll(any(), any(), any(), any()))
                 .thenReturn(Flux.just(sampleOrder));
 
-        ListOrdersFilter filter = new ListOrdersFilter(null, null, null, null);
+        ListOrdersFilter filter = new ListOrdersFilter(null, java.util.Optional.empty(), null, null);
         Flux<Order> result = orderService.listOrders(filter);
 
         StepVerifier.create(result)
@@ -122,7 +123,7 @@ class OrderApplicationServiceTest {
                 org.mockito.ArgumentMatchers.eq(java.util.Optional.empty())
         )).thenReturn(Flux.just(sampleOrder));
 
-        ListOrdersFilter filter = new ListOrdersFilter(5, null, null, null);
+        ListOrdersFilter filter = new ListOrdersFilter(5, java.util.Optional.empty(), null, null);
         Flux<Order> result = orderService.listOrders(filter);
 
         StepVerifier.create(result)
@@ -139,7 +140,7 @@ class OrderApplicationServiceTest {
                 org.mockito.ArgumentMatchers.eq(java.util.Optional.empty())
         )).thenReturn(Flux.just(sampleOrder));
 
-        ListOrdersFilter filter = new ListOrdersFilter(null, "PENDING", null, null);
+        ListOrdersFilter filter = new ListOrdersFilter(null, java.util.Optional.of("PENDING"), null, null);
         Flux<Order> result = orderService.listOrders(filter);
 
         StepVerifier.create(result)

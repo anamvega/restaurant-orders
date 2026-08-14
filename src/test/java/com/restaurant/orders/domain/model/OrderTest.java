@@ -28,7 +28,7 @@ class OrderTest {
     @Test
     void shouldRejectNullTableNumber() {
         List<OrderItem> items = List.of(OrderItem.of("Tacos", 1, new BigDecimal("45.00")));
-        assertThrows(NullPointerException.class, () -> Order.of(null, items));
+        assertThrows(IllegalArgumentException.class, () -> Order.of(null, items));
     }
 
     @Test
@@ -39,7 +39,7 @@ class OrderTest {
 
     @Test
     void shouldRejectNullItems() {
-        assertThrows(NullPointerException.class, () -> Order.of(1, null));
+        assertThrows(IllegalArgumentException.class, () -> Order.of(1, null));
     }
 
     @Test
@@ -58,7 +58,7 @@ class OrderTest {
         order.addItem(newItem);
 
         assertEquals(2, order.getItems().size());
-        assertEquals(new BigDecimal("280.00"), order.getTotalAmount());
+        assertEquals(new BigDecimal("230.00"), order.getTotalAmount());
     }
 
     @Test

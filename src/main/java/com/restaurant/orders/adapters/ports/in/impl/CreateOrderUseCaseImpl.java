@@ -34,6 +34,6 @@ public class CreateOrderUseCaseImpl implements CreateOrderUseCase {
 
         // The actual order creation and validation is done in the Order domain aggregate
         // via Order.of() which handles all business rules
-        return Mono.just(command);
+        return Mono.empty();
     }
 }

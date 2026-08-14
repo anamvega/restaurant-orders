@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -35,16 +36,15 @@ public class OrderApplicationService {
     public Mono<Order> createOrder(CreateOrderCommand command) {
         log.info("Creating order for table {}", command.tableNumber());
 
-        OrderItem[] itemsArray = command.items();
-        var items = Arrays.stream(itemsArray)
+        OrderItem[] items = Arrays.stream(command.items())
                 .map(item -> OrderItem.of(
                         item.dishName(),
                         item.quantity(),
                         item.unitPrice()
                 ))
-                .toList();
+                .toArray(OrderItem[]::new);
 
-        Order order = Order.of(command.tableNumber(), items);
+        Order order = Order.of(command.tableNumber(), List.of(items));
         log.info("Order created with ID: {}", order.getId());
         return orderRepository.save(order);
     }
@@ -64,15 +64,15 @@ public class OrderApplicationService {
                 filter.tableNumber(), filter.status(), filter.dateFrom(), filter.dateTo());
 
         Optional<Integer> tableNum = Optional.ofNullable(filter.tableNumber());
-        Optional<OrderStatus> statusOpt = Optional.empty();
-        
-        filter.status().ifPresent(statusStr -> {
-            try {
-                statusOpt = Optional.of(OrderStatus.valueOf(statusStr.toUpperCase()));
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid status: " + statusStr);
-            }
-        });
+        Optional<OrderStatus> statusOpt = filter.status()
+                .map(statusStr -> {
+                    try {
+                        return Optional.of(OrderStatus.valueOf(statusStr.toUpperCase()));
+                    } catch (IllegalArgumentException e) {
+                        throw new IllegalArgumentException("Invalid status: " + statusStr);
+                    }
+                })
+                .orElse(Optional.empty());
 
         return orderRepository.findAll(
                 tableNum,
@@ -195,6 +195,6 @@ public class OrderApplicationService {
      */
     public ListOrdersFilter toFilter(Integer tableNumber, String status,
                                      LocalDateTime dateFrom, LocalDateTime dateTo) {
-        return new ListOrdersFilter(tableNumber, status, dateFrom, dateTo);
+        return new ListOrdersFilter(tableNumber, Optional.ofNullable(status), dateFrom, dateTo);
     }
 }

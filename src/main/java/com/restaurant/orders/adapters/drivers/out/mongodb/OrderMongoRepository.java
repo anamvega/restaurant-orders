@@ -38,7 +38,8 @@ public class OrderMongoRepository implements OrderRepositoryPort {
 
     @Override
     public Mono<Void> deleteById(String orderId) {
-        return mongoTemplate.remove(Order.class).id(orderId).then();
+        Query query = new Query(Criteria.where("_id").is(orderId));
+        return mongoTemplate.remove(query, Order.class).then();
     }
 
     @Override

@@ -21,6 +21,8 @@ import java.util.Optional;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class OrderMongoRepositoryTest {
@@ -78,7 +80,8 @@ class OrderMongoRepositoryTest {
 
     @Test
     void shouldDeleteById() {
-        when(mongoTemplate.remove(any(), eq("order-1"))).thenReturn(Mono.empty());
+        when(mongoTemplate.remove(any(org.springframework.data.mongodb.core.query.Query.class), eq(Order.class)))
+                .thenReturn(Mono.empty());
 
         Mono<Void> result = repository.deleteById("order-1");
 
