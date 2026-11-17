@@ -3,6 +3,8 @@ package com.restaurant.orders.domain.service;
 import com.restaurant.orders.adapters.ports.out.MesaRepositoryPort;
 import com.restaurant.orders.domain.model.Mesa;
 import com.restaurant.orders.domain.model.MesaStatus;
+import com.restaurant.orders.infrastructure.exceptions.MesaAlreadyExistsException;
+import com.restaurant.orders.infrastructure.exceptions.MesaNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -11,6 +13,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
+
+import static com.restaurant.orders.domain.util.ValidationUtils.requirePositive;
 
 /**
  * Application Service that orchestrates all use cases for mesa (table) management.
@@ -29,10 +33,21 @@ public class MesaApplicationService {
     @Transactional
     public Mono<Mesa> createMesa(Integer number, Integer capacity) {
         log.info("Creating mesa with number {} and capacity {}", number, capacity);
-        return mesaRepository.save(Mesa.builder()
-                .number(number)
-                .capacity(capacity)
-                .build());
+
+           return Mono.defer(() -> {
+                    requirePositive(number, "Table number");
+                    requirePositive(capacity, "Capacity");
+                    return mesaRepository.existsByNumber(number);
+                })
+                .flatMap(exists -> {
+                    if (Boolean.TRUE.equals(exists)) {
+                        return Mono.error(new MesaAlreadyExistsException(number));
+                    }
+                    return mesaRepository.save(Mesa.builder()
+                            .number(number)
+                            .capacity(capacity)
+                            .build());
+                });
     }
 
     /**
@@ -40,7 +55,7 @@ public class MesaApplicationService {
      */
     public Mono<Mesa> getMesa(String mesaId) {
         log.info("Fetching mesa with ID: {}", mesaId);
-        return mesaRepository.findById(mesaId);
+        return findExisting(mesaId);
     }
 
     /**
@@ -78,7 +93,7 @@ public class MesaApplicationService {
             return Mono.error(new IllegalArgumentException("Invalid status: " + status));
         }
 
-        return mesaRepository.findById(mesaId)
+        return findExisting(mesaId)
                 .flatMap(mesa -> {
                     switch (newStatus) {
                         case AVAILABLE -> mesa.available();
@@ -97,7 +112,8 @@ public class MesaApplicationService {
     @Transactional
     public Mono<Void> deleteMesa(String mesaId) {
         log.info("Deleting mesa with ID: {}", mesaId);
-        return mesaRepository.deleteById(mesaId);
+        return findExisting(mesaId)
+                .flatMap(mesa -> mesaRepository.deleteById(mesaId));
     }
 
     /**
@@ -106,5 +122,10 @@ public class MesaApplicationService {
     public Flux<Mesa> listAvailableMesas() {
         log.info("Listing available mesas");
         return mesaRepository.findAvailable();
+    }
+
+    private Mono<Mesa> findExisting(String mesaId) {
+        return mesaRepository.findById(mesaId)
+                .switchIfEmpty(Mono.error(new MesaNotFoundException(mesaId)));
     }
 }

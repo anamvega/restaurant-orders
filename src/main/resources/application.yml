@@ -1,9 +1,15 @@
-server.port=8080
+server:
+  port: 8081
 
-spring.data.mongodb.host=localhost
-spring.data.mongodb.port=27017
-spring.data.mongodb.database=restaurant_orders
+spring:
+  application:
+    name: restaurant-orders
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: restaurant_orders
 
-spring.application.name=restaurant-orders
-
-logging.level.com.restaurant.orders=DEBUG
+logging:
+  level:
+    com.restaurant.orders: DEBUG

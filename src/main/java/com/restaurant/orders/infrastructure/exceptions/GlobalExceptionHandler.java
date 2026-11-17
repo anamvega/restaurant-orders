@@ -15,18 +15,13 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.stream.Collectors;
 
-/**
- * Global error handler for all WebFlux controllers.
- * Provides consistent error responses across the API.
- */
+
 @RestControllerAdvice
 @Slf4j
 @Order(-2)
 public class GlobalExceptionHandler {
 
-    /**
-     * Handle OrderNotFoundException - returns 404 Not Found.
-     */
+
     @ExceptionHandler(OrderNotFoundException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleOrderNotFound(OrderNotFoundException ex,
                                                                     ServerWebExchange exchange) {
@@ -43,9 +38,39 @@ public class GlobalExceptionHandler {
         return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body(error));
     }
 
-    /**
-     * Handle validation errors from @Valid annotations - returns 400 Bad Request.
-     */
+
+    @ExceptionHandler(MesaNotFoundException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleMesaNotFound(MesaNotFoundException ex,
+                                                                   ServerWebExchange exchange) {
+        log.error("Mesa not found: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now(ZoneId.systemDefault()).toString())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .path(exchange.getRequest().getPath().toString())
+                .build();
+
+        return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body(error));
+    }
+
+    @ExceptionHandler(MesaAlreadyExistsException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleMesaAlreadyExists(MesaAlreadyExistsException ex,
+                                                                        ServerWebExchange exchange) {
+        log.error("Mesa already exists: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now(ZoneId.systemDefault()).toString())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .path(exchange.getRequest().getPath().toString())
+                .build();
+
+        return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(error));
+    }
+
     @ExceptionHandler(WebExchangeBindException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleValidationErrors(WebExchangeBindException ex,
                                                                        ServerWebExchange exchange) {
@@ -66,9 +91,6 @@ public class GlobalExceptionHandler {
         return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error));
     }
 
-    /**
-     * Handle InvalidOrderException - returns 400 Bad Request.
-     */
     @ExceptionHandler(InvalidOrderException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleInvalidOrder(InvalidOrderException ex,
                                                                    ServerWebExchange exchange) {
@@ -85,9 +107,6 @@ public class GlobalExceptionHandler {
         return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error));
     }
 
-    /**
-     * Handle IllegalStateException (e.g., terminal state modifications) - returns 409 Conflict.
-     */
     @ExceptionHandler(IllegalStateException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleIllegalState(IllegalStateException ex,
                                                                    ServerWebExchange exchange) {

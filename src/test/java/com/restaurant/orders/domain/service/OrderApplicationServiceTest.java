@@ -29,6 +29,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -254,5 +255,161 @@ class OrderApplicationServiceTest {
         assertEquals(3, command.tableNumber());
         assertEquals(1, command.items().length);
         assertEquals("Tacos", command.items()[0].dishName());
+    }
+
+    @Test
+    void shouldThrowWhenUpdatingStatusOfNonExistentOrder() {
+        when(orderRepository.findById("missing")).thenReturn(Mono.empty());
+
+        Mono<Order> result = orderService.updateStatus("missing", OrderStatus.PREPARING);
+
+        StepVerifier.create(result)
+                .expectError(OrderNotFoundException.class)
+                .verify();
+
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    void shouldThrowWhenDeletingNonExistentOrder() {
+        when(orderRepository.findById("missing")).thenReturn(Mono.empty());
+
+        Mono<Order> result = orderService.deleteOrder("missing");
+
+        StepVerifier.create(result)
+                .expectError(OrderNotFoundException.class)
+                .verify();
+
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    void shouldThrowWhenAddingItemToNonExistentOrder() {
+        when(orderRepository.findById("missing")).thenReturn(Mono.empty());
+
+        AddOrderItemCommand command = new AddOrderItemCommand("Cerveza", 2, new BigDecimal("35.00"));
+        Mono<Order> result = orderService.addOrderItem("missing", command);
+
+        StepVerifier.create(result)
+                .expectError(OrderNotFoundException.class)
+                .verify();
+
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    void shouldThrowWhenRemovingItemFromNonExistentOrder() {
+        when(orderRepository.findById("missing")).thenReturn(Mono.empty());
+
+        Mono<Order> result = orderService.removeOrderItem("missing", "Tacos");
+
+        StepVerifier.create(result)
+                .expectError(OrderNotFoundException.class)
+                .verify();
+
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    void shouldFailToUpdateStatusWhenOrderIsInTerminalState() {
+        Order deliveredOrder = Order.of(1, List.of(OrderItem.of("Tacos", 1, new BigDecimal("45.00"))));
+        deliveredOrder.updateStatus(OrderStatus.PREPARING);
+        deliveredOrder.updateStatus(OrderStatus.SERVED);
+        deliveredOrder.updateStatus(OrderStatus.DELIVERED);
+
+        when(orderRepository.findById("order-1")).thenReturn(Mono.just(deliveredOrder));
+
+        StepVerifier.create(orderService.updateStatus("order-1", OrderStatus.CANCELLED))
+                .expectError(IllegalArgumentException.class)
+                .verify();
+    }
+
+    @Test
+    void shouldFailToCancelAlreadyCancelledOrder() {
+        Order cancelledOrder = Order.of(1, List.of(OrderItem.of("Tacos", 1, new BigDecimal("45.00"))));
+        cancelledOrder.updateStatus(OrderStatus.CANCELLED);
+
+        when(orderRepository.findById("order-1")).thenReturn(Mono.just(cancelledOrder));
+
+        StepVerifier.create(orderService.deleteOrder("order-1"))
+                .expectError(IllegalArgumentException.class)
+                .verify();
+    }
+
+    @Test
+    void shouldFailToAddItemToTerminalOrder() {
+        Order deliveredOrder = Order.of(1, List.of(OrderItem.of("Tacos", 1, new BigDecimal("45.00"))));
+        deliveredOrder.updateStatus(OrderStatus.PREPARING);
+        deliveredOrder.updateStatus(OrderStatus.SERVED);
+        deliveredOrder.updateStatus(OrderStatus.DELIVERED);
+
+        when(orderRepository.findById("order-1")).thenReturn(Mono.just(deliveredOrder));
+
+        AddOrderItemCommand command = new AddOrderItemCommand("Cerveza", 2, new BigDecimal("35.00"));
+        StepVerifier.create(orderService.addOrderItem("order-1", command))
+                .expectError(IllegalStateException.class)
+                .verify();
+    }
+
+    @Test
+    void shouldThrowWhenListingOrdersWithInvalidStatus() {
+        ListOrdersFilter filter = new ListOrdersFilter(null, java.util.Optional.of("BOGUS"), null, null);
+
+        assertThrows(IllegalArgumentException.class, () -> orderService.listOrders(filter));
+    }
+
+    @Test
+    void shouldBuildFilterWithAllParameters() {
+        LocalDateTime dateFrom = LocalDateTime.of(2026, 1, 1, 0, 0);
+        LocalDateTime dateTo = LocalDateTime.of(2026, 1, 31, 23, 59);
+
+        ListOrdersFilter filter = orderService.toFilter(7, "PENDING", dateFrom, dateTo);
+
+        assertEquals(7, filter.tableNumber());
+        assertTrue(filter.status().isPresent());
+        assertEquals("PENDING", filter.status().get());
+        assertEquals(dateFrom, filter.dateFrom());
+        assertEquals(dateTo, filter.dateTo());
+        assertTrue(filter.hasFilters());
+    }
+
+    @Test
+    void shouldBuildFilterWithoutParameters() {
+        ListOrdersFilter filter = orderService.toFilter(null, null, null, null);
+
+        assertNull(filter.tableNumber());
+        assertFalse(filter.status().isPresent());
+        assertNull(filter.dateFrom());
+        assertNull(filter.dateTo());
+        assertFalse(filter.hasFilters());
+    }
+
+    @Test
+    void shouldRejectInvalidItemQuantityWhenCreatingOrder() {
+        CreateOrderItemCommand itemCmd = new CreateOrderItemCommand("Tacos", 0, new BigDecimal("45.00"));
+        CreateOrderCommand command = new CreateOrderCommand(5, new CreateOrderItemCommand[]{itemCmd});
+
+        assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(command));
+
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    void shouldRejectInvalidTableWhenCreatingOrder() {
+        CreateOrderItemCommand itemCmd = new CreateOrderItemCommand("Tacos", 1, new BigDecimal("45.00"));
+        CreateOrderCommand command = new CreateOrderCommand(0, new CreateOrderItemCommand[]{itemCmd});
+
+        assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(command));
+
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    void shouldRejectInvalidItemWhenAddingToOrder() {
+        AddOrderItemCommand command = new AddOrderItemCommand("Cerveza", 0, new BigDecimal("35.00"));
+
+        assertThrows(IllegalArgumentException.class, () -> orderService.addOrderItem("order-1", command));
+
+        verify(orderRepository, never()).findById(anyString());
     }
 }

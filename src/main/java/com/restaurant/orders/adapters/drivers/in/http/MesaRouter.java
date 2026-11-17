@@ -22,12 +22,14 @@ public class MesaRouter {
                 .path("/api", builder -> builder
                         .route(POST("/mesas").and(accept(MediaType.APPLICATION_JSON)),
                                 mesaEndpoints::createMesa)
+                        // Must be declared before /mesas/{id}: routes are matched in order,
+                        // and {id} would otherwise capture "available".
+                        .route(GET("/mesas/available").and(accept(MediaType.APPLICATION_JSON)),
+                                mesaEndpoints::listAvailableMesas)
                         .route(GET("/mesas/{id}").and(accept(MediaType.APPLICATION_JSON)),
                                 mesaEndpoints::getMesa)
                         .route(GET("/mesas").and(accept(MediaType.APPLICATION_JSON)),
                                 mesaEndpoints::listMesas)
-                        .route(GET("/mesas/available").and(accept(MediaType.APPLICATION_JSON)),
-                                mesaEndpoints::listAvailableMesas)
                         .route(PATCH("/mesas/{id}/status").and(accept(MediaType.APPLICATION_JSON)),
                                 mesaEndpoints::updateStatus)
                         .route(DELETE("/mesas/{id}"),
