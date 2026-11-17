@@ -8,7 +8,7 @@ public final class ValidationUtils {
 
     public static void requirePositive(Integer value, String fieldName) {
         if (value == null || value <= 0) {
-            throw new IllegalArgumentException(fieldName + " must be greater than 0");
+            throw new IllegalArgumentException(ErrorMessages.format(ErrorMessages.MUST_BE_POSITIVE, fieldName));
         }
     }
 }

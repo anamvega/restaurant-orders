@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static com.restaurant.orders.domain.util.ErrorMessages.*;
+
 /**
  * Aggregate Root representing a restaurant table order.
  * 
@@ -103,7 +105,7 @@ public class Order {
     public void updateStatus(OrderStatus newStatus) {
         if (!this.status.canTransitionTo(newStatus)) {
             throw new IllegalArgumentException(
-                    String.format("Cannot transition from %s to %s", this.status, newStatus));
+                    format(ORDER_INVALID_TRANSITION, this.status, newStatus));
         }
         this.status = newStatus;
         this.updatedAt = LocalDateTime.now();
@@ -115,7 +117,7 @@ public class Order {
     private void validateNotInTerminalState() {
         if (this.status.isTerminal()) {
             throw new IllegalStateException(
-                    String.format("Cannot modify order in terminal state: %s", this.status));
+                    format(ORDER_TERMINAL_STATE, this.status));
         }
     }
 
@@ -124,10 +126,10 @@ public class Order {
      */
     public static Order of(Integer tableNumber, List<OrderItem> items) {
         if (tableNumber == null || tableNumber <= 0) {
-            throw new IllegalArgumentException("Table number must be greater than 0");
+            throw new IllegalArgumentException(format(MUST_BE_POSITIVE, FIELD_TABLE_NUMBER));
         }
         if (items == null || items.isEmpty()) {
-            throw new IllegalArgumentException("Order must have at least one item");
+            throw new IllegalArgumentException(ORDER_WITHOUT_ITEMS);
         }
         
         Order order = Order.builder()

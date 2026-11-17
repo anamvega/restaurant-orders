@@ -14,6 +14,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
+import static com.restaurant.orders.domain.util.ErrorMessages.*;
 import static com.restaurant.orders.domain.util.ValidationUtils.requirePositive;
 
 /**
@@ -35,8 +36,8 @@ public class MesaApplicationService {
         log.info("Creating mesa with number {} and capacity {}", number, capacity);
 
            return Mono.defer(() -> {
-                    requirePositive(number, "Table number");
-                    requirePositive(capacity, "Capacity");
+                    requirePositive(number, FIELD_TABLE_NUMBER);
+                    requirePositive(capacity, FIELD_CAPACITY);
                     return mesaRepository.existsByNumber(number);
                 })
                 .flatMap(exists -> {
@@ -69,7 +70,7 @@ public class MesaApplicationService {
             try {
                 statusOpt = Optional.of(MesaStatus.valueOf(status.toUpperCase()));
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid status: " + status);
+                throw new IllegalArgumentException(format(INVALID_STATUS, status));
             }
         }
 
@@ -90,7 +91,7 @@ public class MesaApplicationService {
         try {
             newStatus = MesaStatus.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException e) {
-            return Mono.error(new IllegalArgumentException("Invalid status: " + status));
+            return Mono.error(new IllegalArgumentException(format(INVALID_STATUS, status)));
         }
 
         return findExisting(mesaId)
@@ -100,7 +101,7 @@ public class MesaApplicationService {
                         case OCCUPIED -> mesa.occupy();
                         case RESERVED -> mesa.reserve();
                         case CLEANING -> mesa.cleaning();
-                        default -> throw new IllegalArgumentException("Invalid status: " + status);
+                        default -> throw new IllegalArgumentException(format(INVALID_STATUS, status));
                     }
                     return mesaRepository.save(mesa);
                 });

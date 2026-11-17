@@ -21,6 +21,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Collections;
 
+import static com.restaurant.orders.domain.util.ErrorMessages.INVALID_DATE_FORMAT;
+import static com.restaurant.orders.domain.util.ErrorMessages.format;
+
 /**
  * WebFlux Functional Endpoint for order management.
  * Uses RouterFunction-based routing for a purely reactive approach.
@@ -146,7 +149,7 @@ public class OrderEndpoints {
                         return LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
                     } catch (DateTimeParseException e) {
                         throw new IllegalArgumentException(
-                                "Invalid date format for " + param + ". Use ISO format: yyyy-MM-ddTHH:mm:ss");
+                                format(INVALID_DATE_FORMAT, param));
                     }
                 })
                 .orElse(null);

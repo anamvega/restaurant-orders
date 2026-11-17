@@ -11,9 +11,12 @@ import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.stream.Collectors;
+
+import static com.restaurant.orders.domain.util.ErrorMessages.UNEXPECTED_ERROR;
+import static com.restaurant.orders.domain.util.ErrorMessages.VALIDATION_FAILED;
+import static com.restaurant.orders.domain.util.ErrorMessages.format;
+import static com.restaurant.orders.infrastructure.exceptions.ErrorResponseUtils.toResponse;
 
 
 @RestControllerAdvice
@@ -26,16 +29,7 @@ public class GlobalExceptionHandler {
     public Mono<ResponseEntity<ErrorResponse>> handleOrderNotFound(OrderNotFoundException ex,
                                                                     ServerWebExchange exchange) {
         log.error("Order not found: {}", ex.getMessage());
-        
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now(ZoneId.systemDefault()).toString())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .path(exchange.getRequest().getPath().toString())
-                .build();
-
-        return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body(error));
+        return toResponse(HttpStatus.NOT_FOUND, ex.getMessage(), exchange);
     }
 
 
@@ -43,32 +37,14 @@ public class GlobalExceptionHandler {
     public Mono<ResponseEntity<ErrorResponse>> handleMesaNotFound(MesaNotFoundException ex,
                                                                    ServerWebExchange exchange) {
         log.error("Mesa not found: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now(ZoneId.systemDefault()).toString())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .path(exchange.getRequest().getPath().toString())
-                .build();
-
-        return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body(error));
+        return toResponse(HttpStatus.NOT_FOUND, ex.getMessage(), exchange);
     }
 
     @ExceptionHandler(MesaAlreadyExistsException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleMesaAlreadyExists(MesaAlreadyExistsException ex,
                                                                         ServerWebExchange exchange) {
         log.error("Mesa already exists: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now(ZoneId.systemDefault()).toString())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .path(exchange.getRequest().getPath().toString())
-                .build();
-
-        return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(error));
+        return toResponse(HttpStatus.CONFLICT, ex.getMessage(), exchange);
     }
 
     @ExceptionHandler(WebExchangeBindException.class)
@@ -80,47 +56,21 @@ public class GlobalExceptionHandler {
                 .map(err -> err.getField() + ": " + err.getDefaultMessage())
                 .collect(Collectors.joining(", "));
 
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now(ZoneId.systemDefault()).toString())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message("Validation failed: " + details)
-                .path(exchange.getRequest().getPath().toString())
-                .build();
-
-        return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error));
+        return toResponse(HttpStatus.BAD_REQUEST, format(VALIDATION_FAILED, details), exchange);
     }
 
     @ExceptionHandler(InvalidOrderException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleInvalidOrder(InvalidOrderException ex,
                                                                    ServerWebExchange exchange) {
         log.error("Invalid order operation: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now(ZoneId.systemDefault()).toString())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message(ex.getMessage())
-                .path(exchange.getRequest().getPath().toString())
-                .build();
-
-        return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error));
+        return toResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), exchange);
     }
 
     @ExceptionHandler(IllegalStateException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleIllegalState(IllegalStateException ex,
                                                                    ServerWebExchange exchange) {
         log.error("Illegal state: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now(ZoneId.systemDefault()).toString())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .path(exchange.getRequest().getPath().toString())
-                .build();
-
-        return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(error));
+        return toResponse(HttpStatus.CONFLICT, ex.getMessage(), exchange);
     }
 
     /**
@@ -130,16 +80,7 @@ public class GlobalExceptionHandler {
     public Mono<ResponseEntity<ErrorResponse>> handleIllegalArgument(IllegalArgumentException ex,
                                                                       ServerWebExchange exchange) {
         log.error("Illegal argument: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now(ZoneId.systemDefault()).toString())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message(ex.getMessage())
-                .path(exchange.getRequest().getPath().toString())
-                .build();
-
-        return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error));
+        return toResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), exchange);
     }
 
     /**
@@ -149,15 +90,6 @@ public class GlobalExceptionHandler {
     public Mono<ResponseEntity<ErrorResponse>> handleGeneral(Exception ex,
                                                               ServerWebExchange exchange) {
         log.error("Unexpected error", ex);
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now(ZoneId.systemDefault()).toString())
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Internal Server Error")
-                .message("An unexpected error occurred")
-                .path(exchange.getRequest().getPath().toString())
-                .build();
-
-        return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error));
+        return toResponse(HttpStatus.INTERNAL_SERVER_ERROR, UNEXPECTED_ERROR, exchange);
     }
 }

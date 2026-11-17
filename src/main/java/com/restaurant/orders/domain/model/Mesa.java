@@ -10,6 +10,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+import static com.restaurant.orders.domain.util.ErrorMessages.MESA_BEING_CLEANED;
+
 /**
  * Aggregate Root representing a restaurant table.
  * 
@@ -79,7 +81,7 @@ public class Mesa {
      */
     private void validateNotInTerminalState() {
         if (this.status == MesaStatus.CLEANING) {
-            throw new IllegalStateException("Table is being cleaned and cannot be modified");
+            throw new IllegalStateException(MESA_BEING_CLEANED);
         }
     }
 

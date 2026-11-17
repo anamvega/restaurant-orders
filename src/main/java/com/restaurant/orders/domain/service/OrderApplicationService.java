@@ -19,6 +19,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static com.restaurant.orders.domain.util.ErrorMessages.*;
+
 /**
  * Application Service that orchestrates all use cases for order management.
  * This service acts as the facade between the HTTP adapters and the domain layer.
@@ -69,7 +71,7 @@ public class OrderApplicationService {
                     try {
                         return Optional.of(OrderStatus.valueOf(statusStr.toUpperCase()));
                     } catch (IllegalArgumentException e) {
-                        throw new IllegalArgumentException("Invalid status: " + statusStr);
+                        throw new IllegalArgumentException(format(INVALID_STATUS, statusStr));
                     }
                 })
                 .orElse(Optional.empty());
@@ -143,7 +145,7 @@ public class OrderApplicationService {
                     boolean removed = order.removeItem(dishName);
                     if (!removed) {
                         return Mono.error(new IllegalArgumentException(
-                                "Item not found: " + dishName));
+                                format(ORDER_ITEM_NOT_FOUND, dishName)));
                     }
                     return orderRepository.save(order);
                 });
